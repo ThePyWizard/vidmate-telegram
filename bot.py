@@ -13,7 +13,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Replace with your bot token from @BotFather
-BOT_TOKEN = '8367542282:AAGC5P1xHjOoRK_HQ4HwBfSYSOZYa1ELYyU'
+BOT_TOKEN = ''
 
 # Directory to save downloaded videos
 DOWNLOAD_DIR = 'downloads'
@@ -130,4 +130,5 @@ def main():
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == '__main__':
+
     main()
