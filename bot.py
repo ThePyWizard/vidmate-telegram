@@ -4,6 +4,10 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 import yt_dlp
 import asyncio
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Enable logging
 logging.basicConfig(
@@ -12,8 +16,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Replace with your bot token from @BotFather
-BOT_TOKEN = ''
+# Get bot token from environment variable
+BOT_TOKEN = os.getenv('BOT_TOKEN')
+
+if not BOT_TOKEN:
+    raise ValueError("BOT_TOKEN not found in .env file!")
 
 # Directory to save downloaded videos
 DOWNLOAD_DIR = 'downloads'
@@ -50,6 +57,8 @@ async def download_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Send initial message
     status_msg = await update.message.reply_text('⏳ Downloading video...')
+    
+    filename = None  # Track filename for cleanup
     
     try:
         # Configure yt-dlp options
@@ -95,7 +104,6 @@ async def download_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await status_msg.edit_text(
                 '❌ Video is too large (>50MB). Telegram bots can\'t send files this big.'
             )
-            os.remove(filename)
             return
         
         # Send video to user
@@ -105,15 +113,23 @@ async def download_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 caption=f"✅ Downloaded from {url[:50]}..."
             )
         
-        # Delete status message and local file
+        # Delete status message
         await status_msg.delete()
-        os.remove(filename)
         
     except Exception as e:
         logger.error(f"Error downloading video: {e}")
         await status_msg.edit_text(
             f'❌ Failed to download video. Error: {str(e)[:100]}'
         )
+    
+    finally:
+        # Always delete the file, whether successful or not
+        if filename and os.path.exists(filename):
+            try:
+                os.remove(filename)
+                logger.info(f"Deleted file: {filename}")
+            except Exception as e:
+                logger.error(f"Failed to delete file {filename}: {e}")
 
 def main():
     """Start the bot."""
@@ -130,5 +146,4 @@ def main():
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == '__main__':
-
     main()
